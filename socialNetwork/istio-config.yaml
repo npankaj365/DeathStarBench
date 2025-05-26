@@ -1,0 +1,179 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: social-network-gateway
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "*"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: nginx-thrift
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - social-network-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: nginx-thrift
+        port:
+          number: 8080
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: media-frontend
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - social-network-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /media
+    route:
+    - destination:
+        host: media-frontend
+        port:
+          number: 8080
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: nginx-thrift
+spec:
+  host: nginx-thrift
+  trafficPolicy:
+    loadBalancer:
+      simple: ROUND_ROBIN
+    connectionPool:
+      tcp:
+        maxConnections: 100
+        connectTimeout: 30ms
+      http:
+        http2MaxRequests: 1000
+        maxRequestsPerConnection: 100
+    outlierDetection:
+      consecutiveErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: media-frontend
+spec:
+  host: media-frontend
+  trafficPolicy:
+    loadBalancer:
+      simple: ROUND_ROBIN
+    connectionPool:
+      tcp:
+        maxConnections: 100
+        connectTimeout: 30ms
+      http:
+        http2MaxRequests: 1000
+        maxRequestsPerConnection: 100
+    outlierDetection:
+      consecutiveErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+---
+# Circuit breaking for user service (example of per-service config)
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: user-service
+spec:
+  host: user-service
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        http1MaxPendingRequests: 100
+        maxRequestsPerConnection: 10
+    outlierDetection:
+      consecutiveErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+---
+# Default retry policy for all services
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: default-retry-policy
+spec:
+  hosts:
+  - "*"
+  http:
+  - route:
+    - destination:
+        host: "*"
+    retries:
+      attempts: 3
+      perTryTimeout: 2s
+      retryOn: connect-failure,refused-stream,unavailable,cancelled,resource-exhausted
+---
+# Defining timeouts for service calls
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: compose-post-service-timeout
+spec:
+  hosts:
+  - compose-post-service
+  http:
+  - route:
+    - destination:
+        host: compose-post-service
+    timeout: 5s
+---
+# Traffic shifting example (for blue/green deployments)
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: nginx-thrift-bluegreen
+  # Note: This is commented out by default as it's an example
+spec:
+  hosts:
+  - nginx-thrift
+  http:
+  - route:
+    - destination:
+        host: nginx-thrift
+        subset: v1
+      weight: 90
+    - destination:
+        host: nginx-thrift
+        subset: v2
+      weight: 10
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: nginx-thrift-bluegreen
+  # Note: This is commented out by default as it's an example
+spec:
+  host: nginx-thrift
+  subsets:
+  - name: v1
+    labels:
+      version: v1
+  - name: v2
+    labels:
+      version: v2
