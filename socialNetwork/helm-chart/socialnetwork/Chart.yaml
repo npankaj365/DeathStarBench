@@ -1,6 +1,17 @@
 apiVersion: v2
 name: social-network
-description: Helm chart for SocialNetwork service in DeathStarBench
+description: |
+  Helm chart for SocialNetwork service in DeathStarBench
+
+  **Istio Integration:**
+
+  This chart supports Istio integration for managing, securing, and monitoring traffic. To enable Istio integration, set the `istio.enabled` flag to `true` in the `values.yaml` file.
+
+  The following Istio configurations are available in `values.yaml`:
+
+  - `istio.enabled`: Enable or disable Istio integration (default: `false`).
+  - `istio.gatewayName`: Name of the Istio Gateway resource (default: `socialnetwork-gateway`).
+  - `istio.namespace`: Namespace where the Istio Gateway resource is located (default: `istio-system`).
 type: application
 version: 0.1.0
 appVersion: "1.16.0"

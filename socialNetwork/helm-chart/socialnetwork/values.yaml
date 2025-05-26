@@ -54,6 +54,11 @@ global:
     disabled: false
     logSpans: false
 
+istio:
+  enabled: false
+  gatewayName: socialnetwork-gateway
+  namespace: istio-system
+
 mongodb-sharded:
   fullnameOverride: mongodb-sharded
   auth:

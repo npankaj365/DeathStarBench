@@ -1,0 +1,16 @@
+{{- if .Values.istio.enabled }}
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: {{ .Chart.Name }}-destinationrule
+  namespace: {{ .Release.Namespace }}
+spec:
+  host: nginx-thrift
+  trafficPolicy:
+    loadBalancer:
+      simple: ROUND_ROBIN
+    outlierDetection:
+      consecutiveErrors: 1
+      interval: 1s
+      baseEjectionTime: 1m
+{{- end }}

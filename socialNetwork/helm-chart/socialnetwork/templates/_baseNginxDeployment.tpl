@@ -15,6 +15,10 @@ spec:
       labels:
         service: {{ .Values.name }}
         app: {{ .Values.name }}
+      {{- if .Values.global.istio.enabled }}
+      annotations:
+        sidecar.istio.io/inject: "true"
+      {{- end }}
     spec: 
       containers:
       {{- with .Values.container }}
