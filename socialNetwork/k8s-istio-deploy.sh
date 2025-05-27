@@ -112,6 +112,18 @@ run_cmd() {
   fi
 }
 
+# Helper function to apply YAML content
+apply_yaml() {
+  local content="$1"
+  if [ "$DRY_RUN" = true ]; then
+    echo -e "${YELLOW}[DRY RUN] Would apply YAML:${NC}"
+    echo "$content"
+  else
+    echo -e "${GREEN}Applying YAML configuration...${NC}"
+    echo "$content" | kubectl apply -f -
+  fi
+}
+
 # Check prerequisites
 check_prerequisites() {
   echo -e "${GREEN}Checking prerequisites...${NC}"
@@ -132,7 +144,7 @@ check_prerequisites() {
   if ! command -v helm &> /dev/null; then
     echo -e "${RED}helm not found. Please install Helm.${NC}"
     exit 1
-  }
+  fi
   
   # Check kubectl connection
   if ! kubectl get nodes &> /dev/null; then
@@ -178,8 +190,7 @@ create_istio_resources() {
   echo -e "${GREEN}Creating Istio gateway and virtual services...${NC}"
   
   # Create Istio gateway
-  cat <<EOF | run_cmd kubectl apply -f -
-apiVersion: networking.istio.io/v1alpha3
+  apply_yaml "apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
   name: social-network-gateway
@@ -193,19 +204,17 @@ spec:
       name: http
       protocol: HTTP
     hosts:
-    - "*"
-EOF
+    - \"*\""
 
   # Create virtual service for the frontend
-  cat <<EOF | run_cmd kubectl apply -f -
-apiVersion: networking.istio.io/v1alpha3
+  apply_yaml "apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
   name: nginx-thrift
   namespace: $NAMESPACE
 spec:
   hosts:
-  - "*"
+  - \"*\"
   gateways:
   - social-network-gateway
   http:
@@ -216,19 +225,17 @@ spec:
     - destination:
         host: nginx-thrift
         port:
-          number: 8080
-EOF
+          number: 8080"
 
   # Create virtual service for the media frontend
-  cat <<EOF | run_cmd kubectl apply -f -
-apiVersion: networking.istio.io/v1alpha3
+  apply_yaml "apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
   name: media-frontend
   namespace: $NAMESPACE
 spec:
   hosts:
-  - "*"
+  - \"*\"
   gateways:
   - social-network-gateway
   http:
@@ -239,8 +246,7 @@ spec:
     - destination:
         host: media-frontend
         port:
-          number: 8080
-EOF
+          number: 8080"
 
   echo -e "${GREEN}Istio gateway and virtual services created.${NC}"
 }
