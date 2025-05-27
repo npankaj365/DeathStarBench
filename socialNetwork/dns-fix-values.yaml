@@ -1,0 +1,35 @@
+global:
+  replicas: 1
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  imagePullPolicy: "IfNotPresent"
+  restartPolicy: Always
+  serviceType: ClusterIP
+  dockerRegistry: docker.io
+  defaultImageVersion: latest
+  redis:
+    standalone:
+      enabled: true
+  memcached:
+    standalone:
+      enabled: true
+  mongodb:
+    standalone:
+      enabled: true
+  jaeger:
+    localAgentHostPort: jaeger:6831
+    samplerType: probabilistic
+    samplerParam: 0.1
+    disabled: false
+  # Update the nginx resolver to use the default Kubernetes DNS service
+  nginx:
+    # Try these different resolver options
+    resolverName: kube-dns.kube-system.svc.cluster.local
+    # Alternative options (comment out the line above and uncomment one of these if needed)
+    # resolverName: coredns.kube-system.svc.cluster.local
+    # resolverName: 10.96.0.10  # This is often the IP address of kube-dns/coredns
